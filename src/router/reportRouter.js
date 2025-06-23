@@ -4,6 +4,7 @@ import {
   deleteReport,
   editReport,
   getAllReports,
+  getMonthlyTrends,
   getReport,
   getReportsByOwner,
   replyToReport,
@@ -32,3 +33,4 @@ reportRoute.post(
 reportRoute.put("/report/assign/:id", assignReportToVet);
 reportRoute.get("/report/get/assign/:email", getReport);
 reportRoute.put("/report/status/:id", updateReportStatus);
+reportRoute.get("/monthly-trends", getMonthlyTrends);

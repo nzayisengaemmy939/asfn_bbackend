@@ -256,3 +256,43 @@ export const updateReportStatus = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
+
+
+
+
+export const getMonthlyTrends = async (req, res) => {
+  try {
+    const reports = await ASFReport.find();
+
+    const monthMap = {
+      0: "Jan", 1: "Feb", 2: "Mar", 3: "Apr", 4: "May", 5: "Jun",
+      6: "Jul", 7: "Aug", 8: "Sep", 9: "Oct", 10: "Nov", 11: "Dec",
+    };
+
+    // Step 1: Initialize trends for all 12 months
+    const trends = {};
+    for (let i = 0; i < 12; i++) {
+      const month = monthMap[i];
+      trends[month] = { month, affected: 0, died: 0, recovered: 0 };
+    }
+
+    // Step 2: Aggregate report data into corresponding month
+    for (const report of reports) {
+      const date = new Date(report.createdAt);
+      const month = monthMap[date.getMonth()];
+      trends[month].affected += report.numberOfPigsAffected || 0;
+      trends[month].died += report.pigsDied || 0;
+      trends[month].recovered += report.pigsRecovered || 0;
+    }
+
+    // Step 3: Return all months in correct order
+    const sortedTrends = Object.values(trends);
+
+    return res.status(200).json(sortedTrends);
+  } catch (error) {
+    console.error("Trend Error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+
