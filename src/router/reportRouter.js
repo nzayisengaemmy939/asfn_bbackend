@@ -8,11 +8,13 @@ import {
   getReportsByOwner,
   replyToReport,
   submitASFReport,
+  updateReportStatus,
 } from "../contoller/reportController.js";
 import checkMiddleware from "../middleware/middleware.js";
 
 const reportRoute = express.Router();
 export default reportRoute;
+
 reportRoute.post(
   "/report/register",
   checkMiddleware.authenticateToken,
@@ -28,5 +30,5 @@ reportRoute.post(
   replyToReport
 );
 reportRoute.put("/report/assign/:id", assignReportToVet);
-
-reportRoute.get("/report/get/assign/:email",getReport );
+reportRoute.get("/report/get/assign/:email", getReport);
+reportRoute.put("/report/status/:id", updateReportStatus);

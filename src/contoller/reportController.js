@@ -3,9 +3,9 @@ import ASFReport from "../model/reportModel.js";
 
 export const submitASFReport = async (req, res) => {
   try {
-    const { district, sector, cell, symptoms, numberOfPigsAffected,phoneNumber} = req.body;
+    const { district, sector, cell, symptoms, numberOfPigsAffected,phoneNumber,pigsDied,pigsRecovered} = req.body;
 
-    if (!district || !sector || !cell || !symptoms || !numberOfPigsAffected) {
+    if (!district || !sector || !cell || !symptoms) {
       return res.status(400).json({ message: "All fields are required" });
     }
     console.log(req.user.userId);
@@ -16,6 +16,8 @@ export const submitASFReport = async (req, res) => {
       phoneNumber,
       symptoms,
       numberOfPigsAffected,
+      pigsDied,
+      pigsRecovered,
       reportedBy: req.user.userId,
       senderRole: req.user.role,
     });
@@ -225,5 +227,32 @@ export const assignReportToVet = async (req, res) => {
       status: "internal server error",
       error: error.message,
     });
+  }
+};
+
+
+// Update report status
+export const updateReportStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const validStatuses = ["pending", "received", "resolved"];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ message: "Invalid status" });
+    }
+
+    const report = await ASFReport.findById(id);
+    if (!report) {
+      return res.status(404).json({ message: "Report not found" });
+    }
+
+    report.status = status;
+    await report.save();
+
+    return res.status(200).json({ message: "Status updated", report });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Server error" });
   }
 };

@@ -1,11 +1,10 @@
 import mongoose from "mongoose";
 
-
 const replySchema = new mongoose.Schema(
   {
     senderRole: {
       type: String,
-      enum: ["authority","farmer", "veterinarian"],
+      enum: ["authority", "farmer", "veterinarian"],
       required: true,
     },
     message: {
@@ -23,6 +22,11 @@ const replySchema = new mongoose.Schema(
 
 const asfReportSchema = new mongoose.Schema(
   {
+    status: {
+      type: String,
+      enum: ["pending", "received", "resolved"],
+      default: "pending",
+    },
     district: {
       type: String,
       required: true,
@@ -42,7 +46,6 @@ const asfReportSchema = new mongoose.Schema(
       type: Number,
       // required: true,
       trim: true,
-    
     },
     symptoms: {
       type: String,
@@ -51,9 +54,17 @@ const asfReportSchema = new mongoose.Schema(
     },
     numberOfPigsAffected: {
       type: Number,
-      required: true,
       min: 1,
     },
+    pigsDied: {
+      type: Number,
+      min: 0,
+    },
+     pigsRecovered: {
+      type: Number,
+      min: 0,
+    },
+
     reportedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -65,9 +76,9 @@ const asfReportSchema = new mongoose.Schema(
     },
     replies: [replySchema],
     assignedTo: {
-        type: String,
-        default: null,
-      },
+      type: String,
+      default: null,
+    },
   },
   {
     timestamps: true,
