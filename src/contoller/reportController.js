@@ -1,14 +1,27 @@
 import User from "../model/authModel.js";
 import ASFReport from "../model/reportModel.js";
 
+import nodemailer from "nodemailer";
+
+// Import User model
+
 export const submitASFReport = async (req, res) => {
   try {
-    const { district, sector, cell, symptoms, numberOfPigsAffected,phoneNumber,pigsDied,pigsRecovered} = req.body;
+    const {
+      district,
+      sector,
+      cell,
+      symptoms,
+      numberOfPigsAffected,
+      phoneNumber,
+      pigsDied,
+      pigsRecovered,
+    } = req.body;
 
     if (!district || !sector || !cell || !symptoms) {
       return res.status(400).json({ message: "All fields are required" });
     }
-    console.log(req.user.userId);
+
     const newReport = new ASFReport({
       district,
       sector,
@@ -23,12 +36,130 @@ export const submitASFReport = async (req, res) => {
     });
 
     await newReport.save();
+
+    // Step 1: Find all admin and authority users
+    const adminsAndAuthorities = await User.find({
+      role: { $in: ["authority", "admin"] },
+    });
+
+    // Step 2: Find the current user who submitted the report
+    const owner = await User.findById(req.user.userId);
+
+    // Collect email addresses
+    const recipientEmails = [
+      ...adminsAndAuthorities.map((user) => user.email),
+      owner?.email, // Add owner email
+    ].filter(Boolean); // Remove any undefined/null emails
+
+    // Step 3: Configure nodemailer
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USERNAME,
+        pass: process.env.EMAIL_PASSWORD,
+      },
+      tls: {
+        rejectUnauthorized: false,
+      },
+    });
+
+   const mailOptions = {
+  from: process.env.EMAIL_USERNAME,
+  to: recipientEmails,
+  subject: "New ASF Report Submitted",
+  html: `
+    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+      <!-- Header -->
+      <div style="background: linear-gradient(135deg, #4F75FF 0%, #7B68EE 100%); padding: 30px 20px; text-align: center;">
+        <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 600;">
+          🐷 African swine fever System
+        </h1>
+        <p style="color: rgba(255,255,255,0.9); margin: 8px 0 0 0; font-size: 14px;">
+          ASF Report Notification
+        </p>
+      </div>
+      
+      <!-- Content -->
+      <div style="padding: 30px 20px;">
+        <div style="background: #f8faff; border-left: 4px solid #4F75FF; padding: 20px; border-radius: 8px; margin-bottom: 25px;">
+          <h2 style="color: #223a66; margin: 0 0 16px 0; font-size: 20px; font-weight: 600;">
+            📋 New ASF Report Submitted
+          </h2>
+          <p style="color: #4a5568; margin: 0; font-size: 16px; line-height: 1.6;">
+            A new ASF report has been submitted and requires your attention.
+          </p>
+        </div>
+        
+        <!-- Reporter Info -->
+        <div style="background: #ffffff; border: 2px solid #e2e8f0; border-radius: 10px; padding: 20px; margin-bottom: 25px;">
+          <h3 style="color: #223a66; margin: 0 0 15px 0; font-size: 16px; font-weight: 600;">
+            👤 Reporter Information
+          </h3>
+          <div style="display: flex; flex-wrap: wrap; gap: 15px;">
+            <div style="flex: 1; min-width: 200px;">
+              <p style="margin: 0; color: #666;">
+                <strong style="color: #223a66;">Name:</strong><br>
+                <span style="color: #4F75FF; font-size: 14px; font-weight: 600;">
+                  ${owner.firstName} ${owner.lastName}
+                </span>
+              </p>
+            </div>
+            <div style="flex: 1; min-width: 200px;">
+              <p style="margin: 0; color: #666;">
+                <strong style="color: #223a66;">Phone:</strong><br>
+                <span style="color: #7B68EE; font-size: 14px; font-weight: 600;">
+                  ${phoneNumber}
+                </span>
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Action Required -->
+        <div style="background: linear-gradient(135deg, rgba(79,117,255,0.1) 0%, rgba(123,104,238,0.1) 100%); border-radius: 10px; padding: 20px; text-align: center;">
+          <h3 style="color: #223a66; margin: 0 0 15px 0; font-size: 18px; font-weight: 600;">
+            ⚡ Action Required
+          </h3>
+          <p style="color: #4a5568; margin: 0 0 20px 0; font-size: 16px; line-height: 1.6;">
+            Please log in to the asfn  System to view the full report details and take appropriate action.
+          </p>
+          <a href="#" style="display: inline-block; background: linear-gradient(135deg, #4F75FF 0%, #7B68EE 100%); color: #ffffff; text-decoration: none; padding: 12px 30px; border-radius: 25px; font-weight: 600; font-size: 16px; transition: transform 0.2s;">
+            🔍 View Report
+          </a>
+        </div>
+      </div>
+      
+      <!-- Footer -->
+      <div style="background: #f7fafc; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;">
+        <p style="color: #718096; margin: 0; font-size: 14px;">
+          This is an automated notification from african swine fever System<br>
+          <strong style="color: #223a66;">Pig Health Monitoring Dashboard</strong>
+        </p>
+        <div style="margin-top: 15px;">
+          <span style="display: inline-block; width: 8px; height: 8px; background: #4F75FF; border-radius: 50%; margin: 0 4px;"></span>
+          <span style="display: inline-block; width: 8px; height: 8px; background: #7B68EE; border-radius: 50%; margin: 0 4px;"></span>
+          <span style="display: inline-block; width: 8px; height: 8px; background: #4F75FF; border-radius: 50%; margin: 0 4px;"></span>
+        </div>
+      </div>
+    </div>
+  `,
+};
+
+    transporter.sendMail(mailOptions, (err, info) => {
+      if (err) {
+        console.error("Email sending failed:", err);
+      } else {
+        console.log("Notification email sent:", info.response);
+      }
+    });
+
     return res.status(201).json({ message: "Report submitted successfully" });
   } catch (err) {
     console.error("Submit Report Error:", err);
     res.status(500).json({ message: "Server error" });
   }
 };
+
 //all report
 export const getAllReports = async (req, res) => {
   try {
@@ -151,31 +282,68 @@ export const replyToReport = async (req, res) => {
       });
     }
 
+    // Step 1: Find the report
     const report = await ASFReport.findById(id);
-
     if (!report) {
-      return res.status(404).json({
-        message: "Report not found",
-      });
+      return res.status(404).json({ message: "Report not found" });
     }
 
-    report.replies.push({
-      senderRole,
-      message,
-    });
-
+    // Step 2: Push reply to the report
+    report.replies.push({ senderRole, message });
     report.updatedAt = new Date();
     await report.save();
 
+    // Step 3: Get the user who submitted the report
+    const user = await User.findById(report.reportedBy);
+    if (!user || !user.email) {
+      return res.status(404).json({ message: "User who submitted the report not found or has no email." });
+    }
+
+    // Step 4: Configure and send email
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USERNAME,
+        pass: process.env.EMAIL_PASSWORD,
+      },
+      tls: {
+        rejectUnauthorized: false,
+      },
+    });
+
+    const mailOptions = {
+      from: process.env.EMAIL_USERNAME,
+      to: user.email,
+      subject: "Response to Your ASF Report",
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px; border-radius: 10px; background: #f4f4f4;">
+          <h2 style="color: #223a66;">ASF Report Response</h2>
+          <p>Dear ${user.firstName} ${user.lastName},</p>
+          <p>Your ASF report has received a new reply from <strong>${senderRole}</strong>:</p>
+          <blockquote style="border-left: 4px solid #223a66; padding-left: 10px; color: #555;">
+            ${message}
+          </blockquote>
+          <p>Please log in to the system to view full details and respond if needed.</p>
+        </div>
+      `,
+    };
+
+    transporter.sendMail(mailOptions, (err, info) => {
+      if (err) {
+        console.error("Email sending failed:", err);
+      } else {
+        console.log("Reply notification email sent:", info.response);
+      }
+    });
+
     return res.status(200).json({
       status: "success",
-      message: "Reply added successfully",
+      message: "Reply added and email sent to the reporter.",
       data: report,
     });
   } catch (error) {
-    return res.status(500).json({
-      error: error.message,
-    });
+    console.error("Reply to Report Error:", error);
+    return res.status(500).json({ error: error.message });
   }
 };
 
@@ -230,7 +398,6 @@ export const assignReportToVet = async (req, res) => {
   }
 };
 
-
 // Update report status
 export const updateReportStatus = async (req, res) => {
   try {
@@ -257,16 +424,23 @@ export const updateReportStatus = async (req, res) => {
   }
 };
 
-
-
-
 export const getMonthlyTrends = async (req, res) => {
   try {
     const reports = await ASFReport.find();
 
     const monthMap = {
-      0: "Jan", 1: "Feb", 2: "Mar", 3: "Apr", 4: "May", 5: "Jun",
-      6: "Jul", 7: "Aug", 8: "Sep", 9: "Oct", 10: "Nov", 11: "Dec",
+      0: "Jan",
+      1: "Feb",
+      2: "Mar",
+      3: "Apr",
+      4: "May",
+      5: "Jun",
+      6: "Jul",
+      7: "Aug",
+      8: "Sep",
+      9: "Oct",
+      10: "Nov",
+      11: "Dec",
     };
 
     // Step 1: Initialize trends for all 12 months
@@ -295,4 +469,214 @@ export const getMonthlyTrends = async (req, res) => {
   }
 };
 
+export const getWeeklyTrends = async (req, res) => {
+  try {
+    const reports = await ASFReport.find();
 
+    // Get current date and calculate 8 weeks back
+    const now = new Date();
+    const eightWeeksAgo = new Date(now.getTime() - 8 * 7 * 24 * 60 * 60 * 1000);
+
+    // Initialize trends for last 8 weeks
+    const trends = {};
+    for (let i = 0; i < 8; i++) {
+      const weekStart = new Date(
+        eightWeeksAgo.getTime() + i * 7 * 24 * 60 * 60 * 1000
+      );
+      const weekKey = `Week ${i + 1}`;
+      trends[weekKey] = {
+        week: weekKey,
+        weekStart: weekStart.toISOString().split("T")[0],
+        affected: 0,
+        died: 0,
+        recovered: 0,
+      };
+    }
+
+    // Aggregate report data into corresponding weeks
+    for (const report of reports) {
+      const reportDate = new Date(report.createdAt);
+
+      // Skip reports older than 8 weeks
+      if (reportDate < eightWeeksAgo) continue;
+
+      // Calculate which week this report belongs to
+      const daysDiff = Math.floor(
+        (reportDate - eightWeeksAgo) / (24 * 60 * 60 * 1000)
+      );
+      const weekIndex = Math.floor(daysDiff / 7);
+
+      if (weekIndex >= 0 && weekIndex < 8) {
+        const weekKey = `Week ${weekIndex + 1}`;
+        trends[weekKey].affected += report.numberOfPigsAffected || 0;
+        trends[weekKey].died += report.pigsDied || 0;
+        trends[weekKey].recovered += report.pigsRecovered || 0;
+      }
+    }
+
+    // Return weeks in correct order
+    const sortedTrends = Object.values(trends);
+
+    return res.status(200).json(sortedTrends);
+  } catch (error) {
+    console.error("Weekly Trend Error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const getYearlyTrends = async (req, res) => {
+  try {
+    const reports = await ASFReport.find();
+
+    // Get all unique years from reports
+    const years = new Set();
+    const currentYear = new Date().getFullYear();
+
+    // Add last 5 years to ensure we have data
+    for (let i = 4; i >= 0; i--) {
+      years.add((currentYear - i).toString());
+    }
+
+    // Add years from actual reports
+    reports.forEach((report) => {
+      const year = new Date(report.createdAt).getFullYear().toString();
+      years.add(year);
+    });
+
+    // Initialize trends for all years
+    const trends = {};
+    Array.from(years).forEach((year) => {
+      trends[year] = { year, affected: 0, died: 0, recovered: 0 };
+    });
+
+    // Aggregate report data into corresponding years
+    for (const report of reports) {
+      const year = new Date(report.createdAt).getFullYear().toString();
+      if (trends[year]) {
+        trends[year].affected += report.numberOfPigsAffected || 0;
+        trends[year].died += report.pigsDied || 0;
+        trends[year].recovered += report.pigsRecovered || 0;
+      }
+    }
+
+    // Return years in ascending order
+    const sortedTrends = Object.values(trends).sort(
+      (a, b) => parseInt(a.year) - parseInt(b.year)
+    );
+
+    return res.status(200).json(sortedTrends);
+  } catch (error) {
+    console.error("Yearly Trend Error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+// Alternative Weekly Trends - Current year weeks (if you prefer this approach)
+export const getCurrentYearWeeklyTrends = async (req, res) => {
+  try {
+    const reports = await ASFReport.find();
+    const currentYear = new Date().getFullYear();
+
+    // Filter reports for current year only
+    const currentYearReports = reports.filter((report) => {
+      const reportYear = new Date(report.createdAt).getFullYear();
+      return reportYear === currentYear;
+    });
+
+    // Get current week number
+    const now = new Date();
+    const startOfYear = new Date(currentYear, 0, 1);
+    const currentWeek = Math.ceil(
+      ((now - startOfYear) / 86400000 + startOfYear.getDay() + 1) / 7
+    );
+
+    // Initialize trends for weeks (showing last 12 weeks or current year weeks)
+    const trends = {};
+    const weeksToShow = Math.min(currentWeek, 12);
+
+    for (let i = 1; i <= weeksToShow; i++) {
+      trends[`Week ${i}`] = {
+        week: `Week ${i}`,
+        affected: 0,
+        died: 0,
+        recovered: 0,
+      };
+    }
+
+    // Aggregate current year report data into weeks
+    for (const report of currentYearReports) {
+      const reportDate = new Date(report.createdAt);
+      const weekNumber = Math.ceil(
+        ((reportDate - startOfYear) / 86400000 + startOfYear.getDay() + 1) / 7
+      );
+      const weekKey = `Week ${weekNumber}`;
+
+      if (trends[weekKey]) {
+        trends[weekKey].affected += report.numberOfPigsAffected || 0;
+        trends[weekKey].died += report.pigsDied || 0;
+        trends[weekKey].recovered += report.pigsRecovered || 0;
+      }
+    }
+
+    const sortedTrends = Object.values(trends);
+
+    return res.status(200).json(sortedTrends);
+  } catch (error) {
+    console.error("Current Year Weekly Trend Error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+// Enhanced Monthly Trends with year filter option
+export const getMonthlyTrendsWithYear = async (req, res) => {
+  try {
+    const { year } = req.query; // Optional year parameter
+    const reports = await ASFReport.find();
+
+    const monthMap = {
+      0: "Jan",
+      1: "Feb",
+      2: "Mar",
+      3: "Apr",
+      4: "May",
+      5: "Jun",
+      6: "Jul",
+      7: "Aug",
+      8: "Sep",
+      9: "Oct",
+      10: "Nov",
+      11: "Dec",
+    };
+
+    // Filter reports by year if specified
+    const filteredReports = year
+      ? reports.filter(
+          (report) =>
+            new Date(report.createdAt).getFullYear() === parseInt(year)
+        )
+      : reports;
+
+    // Initialize trends for all 12 months
+    const trends = {};
+    for (let i = 0; i < 12; i++) {
+      const month = monthMap[i];
+      trends[month] = { month, affected: 0, died: 0, recovered: 0 };
+    }
+
+    // Aggregate report data into corresponding month
+    for (const report of filteredReports) {
+      const date = new Date(report.createdAt);
+      const month = monthMap[date.getMonth()];
+      trends[month].affected += report.numberOfPigsAffected || 0;
+      trends[month].died += report.pigsDied || 0;
+      trends[month].recovered += report.pigsRecovered || 0;
+    }
+
+    const sortedTrends = Object.values(trends);
+
+    return res.status(200).json(sortedTrends);
+  } catch (error) {
+    console.error("Monthly Trend Error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};

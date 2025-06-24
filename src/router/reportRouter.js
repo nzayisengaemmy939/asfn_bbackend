@@ -4,9 +4,13 @@ import {
   deleteReport,
   editReport,
   getAllReports,
+  getCurrentYearWeeklyTrends,
   getMonthlyTrends,
+  getMonthlyTrendsWithYear,
   getReport,
   getReportsByOwner,
+  getWeeklyTrends,
+  getYearlyTrends,
   replyToReport,
   submitASFReport,
   updateReportStatus,
@@ -34,3 +38,13 @@ reportRoute.put("/report/assign/:id", assignReportToVet);
 reportRoute.get("/report/get/assign/:email", getReport);
 reportRoute.put("/report/status/:id", updateReportStatus);
 reportRoute.get("/monthly-trends", getMonthlyTrends);
+
+reportRoute.get('/weekly-trends', getWeeklyTrends); // Last 8 weeks
+// OR
+reportRoute.get('/weekly-trends', getCurrentYearWeeklyTrends); // CurrenWt year weeks
+
+// New yearly trends
+reportRoute.get('/yearly-trends', getYearlyTrends);
+
+// Enhanced monthly trends with optional year filter
+reportRoute.get('/monthly-trends-by-year', getMonthlyTrendsWithYear);
