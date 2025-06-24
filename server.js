@@ -5,6 +5,7 @@ import connectDb from "./src/database/connectDb.js";
 import cors from 'cors';
 import { userRoute } from "./src/router/authRouter.js";
 import reportRouter from "./src/router/reportRouter.js";
+import { guidance } from "./src/router/gudanceRouter.js";
 
 dotenv.config();
 const app = express();
@@ -18,6 +19,7 @@ app.use(express.json());
 
 app.use('/api', userRoute);
 app.use('/api', reportRouter);
+app.use('/api', guidance);
 // app.use('/api', budgetRouter);
 
 const PORT = process.env.PORT || 3000;
