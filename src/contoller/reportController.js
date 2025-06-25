@@ -68,11 +68,11 @@ export const submitASFReport = async (req, res) => {
   to: recipientEmails,
   subject: "New ASF Report Submitted",
   html: `
-    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+     <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
       <!-- Header -->
       <div style="background: linear-gradient(135deg, #4F75FF 0%, #7B68EE 100%); padding: 30px 20px; text-align: center;">
         <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 600;">
-          🐷 African swine fever System
+          🐷 African Swine Fever System
         </h1>
         <p style="color: rgba(255,255,255,0.9); margin: 8px 0 0 0; font-size: 14px;">
           ASF Report Notification
@@ -115,24 +115,112 @@ export const submitASFReport = async (req, res) => {
           </div>
         </div>
         
+        <!-- Location Information -->
+        <div style="background: #ffffff; border: 2px solid #e2e8f0; border-radius: 10px; padding: 20px; margin-bottom: 25px;">
+          <h3 style="color: #223a66; margin: 0 0 15px 0; font-size: 16px; font-weight: 600;">
+            📍 Location Details
+          </h3>
+          <div style="display: flex; flex-wrap: wrap; gap: 15px;">
+            <div style="flex: 1; min-width: 150px;">
+              <p style="margin: 0; color: #666;">
+                <strong style="color: #223a66;">District:</strong><br>
+                <span style="color: #4F75FF; font-size: 14px; font-weight: 600;">
+                  ${district}
+                </span>
+              </p>
+            </div>
+            <div style="flex: 1; min-width: 150px;">
+              <p style="margin: 0; color: #666;">
+                <strong style="color: #223a66;">Sector:</strong><br>
+                <span style="color: #7B68EE; font-size: 14px; font-weight: 600;">
+                  ${sector}
+                </span>
+              </p>
+            </div>
+            <div style="flex: 1; min-width: 150px;">
+              <p style="margin: 0; color: #666;">
+                <strong style="color: #223a66;">Cell:</strong><br>
+                <span style="color: #4F75FF; font-size: 14px; font-weight: 600;">
+                  ${cell}
+                </span>
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Report Details -->
+        <div style="background: #ffffff; border: 2px solid #e2e8f0; border-radius: 10px; padding: 20px; margin-bottom: 25px;">
+          <h3 style="color: #223a66; margin: 0 0 15px 0; font-size: 16px; font-weight: 600;">
+            🐷 Pig Health Report
+          </h3>
+          
+          <!-- Symptoms -->
+          <div style="margin-bottom: 20px; background: #fff5f5; border-left: 4px solid #f56565; padding: 15px; border-radius: 8px;">
+            <p style="margin: 0 0 8px 0; color: #666;">
+              <strong style="color: #c53030;">Symptoms Observed:</strong>
+            </p>
+            <p style="margin: 0; color: #c53030; font-size: 14px; font-weight: 600;">
+              ${symptoms}
+            </p>
+          </div>
+          
+          <!-- Statistics -->
+          <div style="display: flex; flex-wrap: wrap; gap: 15px;">
+            <div style="flex: 1; min-width: 120px; background: #f7fafc; padding: 15px; border-radius: 8px; text-align: center;">
+              <p style="margin: 0 0 5px 0; color: #666; font-size: 12px; text-transform: uppercase; font-weight: 600;">
+                Affected
+              </p>
+              <p style="margin: 0; color: #2d3748; font-size: 20px; font-weight: 700;">
+                ${numberOfPigsAffected || 0}
+              </p>
+            </div>
+            <div style="flex: 1; min-width: 120px; background: #fed7d7; padding: 15px; border-radius: 8px; text-align: center;">
+              <p style="margin: 0 0 5px 0; color: #666; font-size: 12px; text-transform: uppercase; font-weight: 600;">
+                Deaths
+              </p>
+              <p style="margin: 0; color: #c53030; font-size: 20px; font-weight: 700;">
+                ${pigsDied || 0}
+              </p>
+            </div>
+            <div style="flex: 1; min-width: 120px; background: #c6f6d5; padding: 15px; border-radius: 8px; text-align: center;">
+              <p style="margin: 0 0 5px 0; color: #666; font-size: 12px; text-transform: uppercase; font-weight: 600;">
+                Recovered
+              </p>
+              <p style="margin: 0; color: #38a169; font-size: 20px; font-weight: 700;">
+                ${pigsRecovered || 0}
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Severity Alert -->
+        ${(pigsDied > 0 || numberOfPigsAffected >= 5) ? `
+        <div style="background: linear-gradient(135deg, rgba(245,101,101,0.1) 0%, rgba(229,62,62,0.1) 100%); border: 2px solid #fed7d7; border-radius: 10px; padding: 20px; margin-bottom: 25px; text-align: center;">
+          <h3 style="color: #c53030; margin: 0 0 10px 0; font-size: 16px; font-weight: 700;">
+            ⚠️ HIGH PRIORITY ALERT
+          </h3>
+          <p style="color: #742a2a; margin: 0; font-size: 14px; font-weight: 600;">
+            This report requires immediate attention due to ${pigsDied > 0 ? 'pig deaths' : 'high number of affected pigs'}.
+          </p>
+        </div>
+        ` : ''}
+        
         <!-- Action Required -->
         <div style="background: linear-gradient(135deg, rgba(79,117,255,0.1) 0%, rgba(123,104,238,0.1) 100%); border-radius: 10px; padding: 20px; text-align: center;">
           <h3 style="color: #223a66; margin: 0 0 15px 0; font-size: 18px; font-weight: 600;">
             ⚡ Action Required
           </h3>
           <p style="color: #4a5568; margin: 0 0 20px 0; font-size: 16px; line-height: 1.6;">
-            Please log in to the asfn  System to view the full report details and take appropriate action.
+            Please log in to the ASF System to view the full report details and take appropriate action.
           </p>
-          <a href="#" style="display: inline-block; background: linear-gradient(135deg, #4F75FF 0%, #7B68EE 100%); color: #ffffff; text-decoration: none; padding: 12px 30px; border-radius: 25px; font-weight: 600; font-size: 16px; transition: transform 0.2s;">
-            🔍 View Report
-          </a>
+      
         </div>
       </div>
       
       <!-- Footer -->
       <div style="background: #f7fafc; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;">
         <p style="color: #718096; margin: 0; font-size: 14px;">
-          This is an automated notification from african swine fever System<br>
+          This is an automated notification from African Swine Fever System<br>
           <strong style="color: #223a66;">Pig Health Monitoring Dashboard</strong>
         </p>
         <div style="margin-top: 15px;">
